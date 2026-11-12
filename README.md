@@ -104,6 +104,32 @@ So of a 40 ms `obs`, the CPU work is ~0.2 ms — 0.5 %. Optimising the matcher
 would not make the agent feel faster; the USB round-trip and the phone's own dump
 are the cost, which is exactly why the companion exists.
 
+### Tap + verify
+
+A tap is read → inject → wait for the screen to change, so its win is much
+smaller than a read's. Same device, same session, 10 runs each, every run
+checked for a non-zero exit (a failed lookup finishes fast and would flatter
+the numbers):
+
+| step | median | note |
+|---|---|---|
+| `adb shell true` | 35 ms | floor for any adb call |
+| `adb shell input tap` | 70 ms | fixed cost of injecting the tap, hpctl cannot remove it |
+| `hpctl obs --quiet` | 73 ms | read the tree to resolve the target |
+| `hpctl tap --quiet` | 150 ms | 73 + 70 → matches the two steps above |
+| `hpctl tap --text` (full) | **360 ms** (306–739) | adds waiting for the UI to actually change |
+
+So `tap + verify` lands around **360 ms with the companion against ~2.5 s on the
+fallback** — roughly 7x, not the 60x a read gets.
+
+**The remainder (~210 ms here) depends on the app, not on hpctl.** After the tap
+is injected, hpctl waits for the accessibility tree to report the new screen,
+which is however long the app takes to redraw — a tab switch in this launcher
+costs ~200 ms, a heavier screen went past 700 ms in the same run. Treat the
+360 ms as this device + this app, and measure your own screen before quoting a
+number: `HPCTL_BENCH_TAP="Label" ./bench/on-device.sh` taps that one label and
+prints the same table.
+
 ## Using it from an agent
 
 [`SKILL.md`](SKILL.md) is a ready-made agent skill (Claude-style frontmatter):
