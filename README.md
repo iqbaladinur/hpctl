@@ -113,6 +113,7 @@ hpctl swipe 540 1800 540 400 300     x1 y1 x2 y2 [ms]
 hpctl launch com.pkg                 start an app
 hpctl wait --text "Home" --timeout 10
 hpctl shot screen.png                screenshot
+hpctl version                        print the build version
 ```
 
 Every action prints the resulting screen — there is no need to call `obs`
