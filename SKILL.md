@@ -64,10 +64,30 @@ never used, so there is nothing to "refresh" by hand.
 The companion also makes `hpctl type` accept any script (emoji, non-Latin) by
 writing with `ACTION_SET_TEXT` instead of `input text`, which is ASCII only.
 
+Numbers from `bench/on-device.sh` (median of 10 reads, GT78-VN / Android 12 /
+USB): **40 ms** with the companion, **2 480 ms** on the fallback — a 60x gap. So
+read the screen often instead of guessing; it is the cheap operation.
+
+Turning the service on and off (Android 12 rejects an empty string, so
+disabling must use `settings delete`, not `put ... ""`):
+
+```bash
+# on
+adb shell settings put secure enabled_accessibility_services id.iqbaldev.hpctl.companion/.TreeDumpService
+adb shell settings put secure accessibility_enabled 1
+# off
+adb shell settings delete secure enabled_accessibility_services
+adb shell settings put secure accessibility_enabled 0
+```
+
 ## Pitfalls that cost real time
 
 - **Screen off = empty tree.** `adb shell svc power stayon usb`, or
   `hpctl key 224`, then check `hpctl state`.
+- **(Re)enabled service needs a moment.** Right after enabling, the companion
+  has not written a tree yet, so reads still take the ~2.5 s fallback for a few
+  seconds. That is not stale data and not a broken install — retry before
+  diagnosing.
 - **Another accessibility service can swallow the dump.** Symptom: `obs`
   returns ~13 system-UI elements even though another app is clearly on screen.
   Disable that service (with the user's permission) or install the companion.
