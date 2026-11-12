@@ -1,0 +1,15 @@
+# build artifact — rebuild with `go build -o hpctl .`
+/hpctl
+/hpctl.exe
+*.test
+/dist/
+
+# local runtime output
+*.log
+screen-*.png
+shot-*.png
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store

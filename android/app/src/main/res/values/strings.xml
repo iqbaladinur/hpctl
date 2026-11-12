@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">hpctl companion</string>
+    <string name="service_label">hpctl tree dump</string>
+    <string name="a11y_desc">Writes the screen\'s element tree to a file so hpctl on the computer can act on it by name.</string>
+</resources>

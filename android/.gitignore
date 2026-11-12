@@ -1,0 +1,29 @@
+# Gradle / Kotlin build output
+.gradle/
+.kotlin/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# machine-specific paths (Android SDK location)
+local.properties
+
+# Android artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+captures/
+tree.json
+
+# signing material — never publish
+*.jks
+*.keystore
+keystore.properties
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
