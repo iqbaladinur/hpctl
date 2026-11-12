@@ -50,7 +50,7 @@ jobs:
           version="${TAG#v}"
           out="hpctl_${version}_${GOOS}_${GOARCH}"
           go build -trimpath -ldflags "-s -w -X main.version=${version}" -o hpctl .
-          tar -czf "${out}.tar.gz" hpctl
+          tar -czf "${out}.tar.gz" hpctl SKILL.md README.md LICENSE
           rm -f hpctl
           sha256sum "${out}.tar.gz" > "${out}.tar.gz.sha256"
       - uses: actions/upload-artifact@v4

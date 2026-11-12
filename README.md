@@ -60,6 +60,15 @@ install -m755 hpctl ~/.local/bin/hpctl
 
 Zero Go dependencies — the module imports only the standard library.
 
+## Using it from an agent
+
+[`SKILL.md`](SKILL.md) is a ready-made agent skill (Claude-style frontmatter):
+drop the repo in your agent's skill directory, or paste the file, and the agent
+gets the loop, the selector rules and the risk-gate policy instead of inventing
+coordinates. Caution: the file is procedural on purpose — command reference
+stays in this README so the two cannot disagree, and a test fails the build if
+either mentions a command the binary does not implement.
+
 ## Typical flow
 
 Every task is the same four steps. Reading the screen is cheap (0.04 s with the
