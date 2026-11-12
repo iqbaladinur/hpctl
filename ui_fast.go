@@ -77,19 +77,19 @@ func fastScreen(all bool) (*Screen, bool) {
 	seen := map[string]bool{}
 	for _, n := range t.Nodes {
 		e := Element{
-			Role:      roleFromSimple(n.C),
-			Label:     strings.TrimSpace(n.T),
-			Desc:      strings.TrimSpace(n.D),
-			ID:        n.I,
-			X1:        n.B[0],
-			Y1:        n.B[1],
-			X2:        n.B[2],
-			Y2:        n.B[3],
-			Clickable: n.Cl == 1,
-			Enabled:   n.Dis != 1,
-			Focused:   n.F == 1,
+			Role:       roleFromSimple(n.C),
+			Label:      strings.TrimSpace(n.T),
+			Desc:       strings.TrimSpace(n.D),
+			ID:         n.I,
+			X1:         n.B[0],
+			Y1:         n.B[1],
+			X2:         n.B[2],
+			Y2:         n.B[3],
+			Clickable:  n.Cl == 1,
+			Enabled:    n.Dis != 1,
+			Focused:    n.F == 1,
 			Scrollable: n.Sc == 1,
-			Checked:   n.Ch == 1,
+			Checked:    n.Ch == 1,
 		}
 		if e.X2 <= e.X1 || e.Y2 <= e.Y1 {
 			continue
@@ -138,7 +138,6 @@ func roleFromSimple(c string) string {
 	}
 	return strings.ToLower(c)
 }
-
 
 // offsetMillis is host clock minus phone clock. The two are not the same: on
 // this phone the difference was 8 minutes, which made every fresh dump look

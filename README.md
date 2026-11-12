@@ -1,5 +1,7 @@
 # hpctl
 
+[![ci](https://github.com/iqbaladinur/hpctl/actions/workflows/ci.yml/badge.svg)](https://github.com/iqbaladinur/hpctl/actions/workflows/ci.yml)
+
 Drive an Android phone from the command line **by element name, not by pixel**.
 
 `hpctl` reads the phone's own accessibility tree and acts on what it finds:
@@ -39,6 +41,16 @@ automatically — nothing breaks, it is just slower.
 
 ## Install
 
+Prebuilt binaries (Linux and macOS, amd64 + arm64) and the companion APK are on
+the [releases page](https://github.com/iqbaladinur/hpctl/releases):
+
+```bash
+tar -xzf hpctl_0.1.0_linux_amd64.tar.gz
+install -m755 hpctl ~/.local/bin/hpctl
+```
+
+From source:
+
 ```bash
 git clone https://github.com/iqbaladinur/hpctl
 cd hpctl
@@ -47,6 +59,31 @@ install -m755 hpctl ~/.local/bin/hpctl
 ```
 
 Zero Go dependencies — the module imports only the standard library.
+
+## Typical flow
+
+Every task is the same four steps. Reading the screen is cheap (0.04 s with the
+companion, 1.7 s without), so read often instead of guessing.
+
+```bash
+hpctl devices                        # 1. is exactly one phone attached?
+hpctl state                          #    what is in front right now, no dump
+hpctl obs                            # 2. read the screen as text, note a label
+hpctl tap --text "Search"            # 3. act on that label — prints the new screen
+hpctl type "coffee" --into "Search"  #    ...and the new screen is your verification
+hpctl key enter
+```
+
+Rules that keep scripts from rotting:
+
+- **Never store coordinates.** Re-read with `obs` and let `hpctl` compute the
+  centre of the element; a layout change then costs nothing.
+- **Address by `--text` or `--id`, not by `-r N`.** A ref is only valid for the
+  screen it came from; use it when you just looked.
+- **Trust the screen printed after each action.** It is read after the UI
+  sequence number changed, so it is the result, not the pre-action state. Add
+  `--quiet` in scripts and `hpctl wait --text "..."` for slow screens.
+- **Wake the phone first.** `adb shell svc power stayon usb`, or `hpctl key 224`.
 
 ## Commands
 

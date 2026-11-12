@@ -22,6 +22,7 @@ const usage = `hpctl — kendalikan HP Android lewat adb, tanpa menyimpan koordi
   hpctl wait --text "Beranda"          tunggu sampai elemen muncul
   hpctl shot [file.png]                screenshot
   hpctl devices                        HP yang terpasang
+  hpctl version                        versi build
 
 Selector: --text (exact), --contains (substring), --id, --desc, --role,
 --index N (yang ke-N kalau banyak), -r/--ref N (nomor dari obs).
@@ -29,6 +30,9 @@ Selector: --text (exact), --contains (substring), --id, --desc, --role,
 Flag umum: --device SERIAL, --quiet (jangan cetak layar setelah aksi),
 --settle MS (jeda sebelum baca layar, default 250).
 `
+
+// version is stamped at build time: -ldflags "-X main.version=1.2.3".
+var version = "dev"
 
 func main() {
 	args := os.Args[1:]
@@ -39,6 +43,11 @@ func main() {
 	args = stripDevice(args)
 	if len(args) == 0 || args[0] == "-h" || args[0] == "--help" || args[0] == "help" {
 		fmt.Print(usage)
+		return
+	}
+	// Before pickDevice: `hpctl version` must work with no phone plugged in.
+	if args[0] == "version" || args[0] == "-v" || args[0] == "--version" {
+		fmt.Println("hpctl " + version)
 		return
 	}
 	pickDevice()

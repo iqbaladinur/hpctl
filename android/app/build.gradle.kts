@@ -12,7 +12,7 @@ android {
         minSdk = 28
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = (findProperty("appVersion") as String?) ?: "0.1.0"
     }
 
     compileOptions {

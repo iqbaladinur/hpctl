@@ -1,0 +1,151 @@
+name: release
+
+# Tag v0.1.0 -> one GitHub Release with the CLI for 4 platforms plus the
+# companion APK and a SHA256SUMS file.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, e.g. v0.1.0'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  cli:
+    name: cli ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+      - name: vet + test
+        run: |
+          go vet ./...
+          go test ./...
+      - name: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          set -eu
+          version="${TAG#v}"
+          out="hpctl_${version}_${GOOS}_${GOARCH}"
+          go build -trimpath -ldflags "-s -w -X main.version=${version}" -o hpctl .
+          tar -czf "${out}.tar.gz" hpctl
+          rm -f hpctl
+          sha256sum "${out}.tar.gz" > "${out}.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hpctl-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            hpctl_*.tar.gz
+            hpctl_*.tar.gz.sha256
+          if-no-files-found: error
+
+  companion:
+    name: companion apk
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: assembleDebug
+        run: |
+          set -eu
+          version="${TAG#v}"
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug -PappVersion="${version}" --no-daemon
+          mkdir -p ../dist
+          cp app/build/outputs/apk/debug/app-debug.apk "../dist/hpctl-companion_${version}.apk"
+          cd ../dist
+          sha256sum *.apk > *.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-apk
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: publish release
+    needs: [cli, companion]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: collect, checksum, release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          mkdir -p out
+          find dist -type f \( -name '*.tar.gz' -o -name '*.apk' \) -exec cp {} out/ \;
+          cd out
+          sha256sum * > SHA256SUMS
+          ls -l
+
+          version="${TAG#v}"
+          cat > notes.md <<EOF
+          ## hpctl ${version}
+
+          CLI — pick your platform:
+
+          | file | what |
+          |---|---|
+          | \`hpctl_${version}_linux_amd64.tar.gz\` | Linux x86-64 |
+          | \`hpctl_${version}_linux_arm64.tar.gz\` | Linux ARM64 (SBC, Termux-ish hosts) |
+          | \`hpctl_${version}_darwin_amd64.tar.gz\` | macOS Intel |
+          | \`hpctl_${version}_darwin_arm64.tar.gz\` | macOS Apple Silicon |
+
+          \`\`\`bash
+          tar -xzf hpctl_${version}_linux_amd64.tar.gz
+          install -m755 hpctl ~/.local/bin/hpctl
+          \`\`\`
+
+          Companion (optional, makes screen reads ~40x faster) —
+          \`hpctl-companion_${version}.apk\`, **debug-signed**: install on a device
+          you control, then enable the accessibility service:
+
+          \`\`\`bash
+          adb install -r hpctl-companion_${version}.apk
+          adb shell settings put secure enabled_accessibility_services id.iqbaldev.hpctl.companion/.TreeDumpService
+          adb shell settings put secure accessibility_enabled 1
+          \`\`\`
+
+          Requires Android 9+ (minSdk 28). Verify downloads with \`SHA256SUMS\`.
+          The APK is signed with the standard debug key — do not treat it as a
+          trusted production build.
+          EOF
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" ./*.tar.gz ./*.apk SHA256SUMS --clobber
+          else
+            gh release create "$TAG" ./*.tar.gz ./*.apk SHA256SUMS \
+              --title "hpctl ${version}" --notes-file notes.md --verify-tag
+          fi
