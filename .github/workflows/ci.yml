@@ -3,7 +3,19 @@ name: ci
 on:
   push:
     branches: [main]
+    # Docs-only changes build nothing, so they do not start a run. Workflow and
+    # source changes always do — a broken ci.yml has to fail loudly.
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '**.gitignore'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '**.gitignore'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
