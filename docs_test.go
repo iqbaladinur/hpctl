@@ -27,7 +27,8 @@ func TestDocsMentionOnlyRealCommands(t *testing.T) {
 	if len(known) < 10 {
 		t.Fatalf("parsed only %d commands from the usage text: %v", len(known), known)
 	}
-	re := regexp.MustCompile(`\bhpctl ([a-z][a-z-]*)`)
+	// Only real invocations: `hpctl <cmd>` in backticks, or a code-block line.
+	re := regexp.MustCompile("(?:`hpctl |^\\s*\\$? ?hpctl )([a-z][a-z-]*)")
 	for _, path := range []string{"README.md", "SKILL.md"} {
 		raw, err := os.ReadFile(path)
 		if err != nil {

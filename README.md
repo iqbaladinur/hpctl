@@ -101,7 +101,7 @@ as uiautomator XML). Host: i5-7500T, Go 1.27.
 | render the screen for the agent to read | 0.06 ms | 408 |
 
 So of a 40 ms `obs`, the CPU work is ~0.2 ms — 0.5 %. Optimising the matcher
-would not make hpctl feel faster; the USB round-trip and the phone's own dump
+would not make the agent feel faster; the USB round-trip and the phone's own dump
 are the cost, which is exactly why the companion exists.
 
 ## Using it from an agent
