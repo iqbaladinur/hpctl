@@ -60,6 +60,50 @@ install -m755 hpctl ~/.local/bin/hpctl
 
 Zero Go dependencies — the module imports only the standard library.
 
+## Benchmark
+
+Two layers, because they fail for different reasons: the device round-trip
+(USB + Android) dominates every call, and the in-process work (decode + match)
+is the part a change to hpctl could actually regress.
+
+### On device
+
+Measured with [`bench/on-device.sh`](bench/on-device.sh) — reads only, nothing
+tapped — on a **GT78-VN handheld (Android 12, USB)**, 10 runs each, median:
+
+| operation | with companion | without companion (`uiautomator`) |
+|---|---|---|
+| read the screen (`hpctl obs`) | **40 ms** | 2 480 ms |
+| find one control (`hpctl wait --text`) | 40 ms + match | 2 500 ms per poll |
+| which app is in front (`hpctl state`) | 104 ms (no dump either way) | 104 ms |
+
+Same shape on a ZenFone Max Pro M1 (Android 9, USB) measured earlier:
+`obs` 40–90 ms with the companion, 1 700–1 800 ms without, `state` 130 ms.
+
+Caveat worth knowing: right after the accessibility service is (re)enabled it
+needs a moment before it has written a tree, so the first `obs` can still take
+the 2.5 s fallback path. Nothing is cached wrongly — hpctl never reads a stale
+file — it just falls back until the first fresh write lands.
+
+### In process
+
+`go test -run '^$' -bench . -benchmem` — no phone needed, fixtures live in
+`testdata/` (a 77-node feed screen, a 261-node settings list, and the same feed
+as uiautomator XML). Host: i5-7500T, Go 1.27.
+
+| work | time | allocs |
+|---|---|---|
+| decode companion JSON, 77 nodes | 0.10 ms | 33 |
+| decode companion JSON, 261 nodes | 0.27 ms | 322 |
+| decode + find a control by label, 77 nodes | 0.17 ms | 566 |
+| decode + find a control by id, 261 nodes | 0.16 ms | 1 509 |
+| parse uiautomator XML, 77 nodes | 1.20 ms | 5 284 |
+| render the screen for the agent to read | 0.06 ms | 408 |
+
+So of a 40 ms `obs`, the CPU work is ~0.2 ms — 0.5 %. Optimising the matcher
+would not make hpctl feel faster; the USB round-trip and the phone's own dump
+are the cost, which is exactly why the companion exists.
+
 ## Using it from an agent
 
 [`SKILL.md`](SKILL.md) is a ready-made agent skill (Claude-style frontmatter):

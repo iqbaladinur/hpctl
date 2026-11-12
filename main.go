@@ -58,8 +58,13 @@ func main() {
 	case "obs", "observe":
 		f, s := newFS("obs", "baca layar")
 		all := f.Bool("all", false, "tampilkan juga elemen tanpa label")
+		quiet := f.Bool("quiet", false, "baca saja, jangan cetak layar")
 		parse(f, args[1:])
 		_ = s
+		if *quiet {
+			dumpScreen(*all)
+			return
+		}
 		fmt.Print(dumpScreen(*all))
 	case "tap":
 		f, s := newFS("tap", "tap elemen")

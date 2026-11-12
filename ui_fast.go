@@ -73,6 +73,16 @@ func fastScreen(all bool) (*Screen, bool) {
 	if !ok {
 		return nil, false
 	}
+	s := screenFromFast(t, all)
+	if s == nil {
+		return nil, false
+	}
+	return s, true
+}
+
+// screenFromFast turns a decoded companion tree into a Screen. Split out from
+// fastScreen so the benchmarks can time the conversion without adb in the loop.
+func screenFromFast(t *fastTree, all bool) *Screen {
 	s := &Screen{App: t.Pkg, Width: t.W, Height: t.H, Seq: t.Seq}
 	seen := map[string]bool{}
 	for _, n := range t.Nodes {
@@ -106,9 +116,9 @@ func fastScreen(all bool) (*Screen, bool) {
 		s.Elements = append(s.Elements, e)
 	}
 	if len(s.Elements) == 0 {
-		return nil, false
+		return nil
 	}
-	return s, true
+	return s
 }
 
 // dump waits until the companion reports a change, so the screen printed after
